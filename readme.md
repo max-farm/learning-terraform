@@ -7,6 +7,6 @@ Variables in terraform.tvfars can be changed to provide region, enable and disab
 
 If env is "prod" the appropriate tags apllied and ASG scales to 2 instances and instance type t2.large. 
 
-If env is other than "prod", for example "env", than t3.micro used for 1 instance. 
+If env is other than "prod", for example "test", than t3.micro used for 1 instance. 
  
-outputs.tf provide variables definitions including load balancer URL.
+outputs.tf provide variables definitions output including load balancer URL.
