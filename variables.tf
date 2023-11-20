@@ -33,3 +33,7 @@ variable "common_tags" {
 variable "env" {
     default = "prod"
 }
+
+variable "iam_users" {
+    default = ["foo", "bar"] 
+}

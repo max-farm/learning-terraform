@@ -148,3 +148,8 @@ resource "aws_lb_listener" "http" {
     Name = "aws_lb_listener" #extra tag
     }
 }
+
+resource "aws_iam_user" "iam_users" {
+    count = length(var.iam_users)
+    name = element(var.iam_users, count.index)
+}
