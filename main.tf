@@ -12,6 +12,14 @@ provider "aws" {
     }
 }
 
+terraform {
+  backend "s3" {
+    bucket = "tfstate-bucket-20231123133616731900000001" #name of the bucket created my terraform in ./remote-state
+    key = "terraform.tfstate"  #object name of state file 
+    region = "us-east-1"
+  }
+}
+
 ###########data##############
 
 data "aws_availability_zones" "working" {} #list of zones in AWS region
@@ -36,6 +44,8 @@ resource "aws_default_subnet" "default_az1" {
 resource "aws_default_subnet" "default_az2" {
   availability_zone = data.aws_availability_zones.working.names[1] #return name of 2nd AZ in current region
 }
+
+
 
 resource "aws_security_group" "web" {    #defines SG in default VPC
   name   = "Web-Server Security Group"
@@ -149,7 +159,7 @@ resource "aws_lb_listener" "http" {
     }
 }
 
-resource "aws_iam_user" "iam_users" {
+resource "aws_iam_user" "iam_users" {      #creates IAM users from a variable list
     count = length(var.iam_users)
     name = element(var.iam_users, count.index)
 }

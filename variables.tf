@@ -35,5 +35,6 @@ variable "env" {
 }
 
 variable "iam_users" {
+    description = "A list if IAM users"
     default = ["foo", "bar"] 
 }
