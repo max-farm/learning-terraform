@@ -44,17 +44,22 @@ resource "aws_vpc" "VPC_1" {
   }
 }
 
-resource "aws_default_subnet" "default_az1" {
-  availability_zone = data.aws_availability_zones.working.names[0] #return name of 1st AZ in current region
+data "aws_availability_zones" "available" {
+  state = "available"
 }
 
-resource "aws_default_subnet" "default_az2" {
-  availability_zone = data.aws_availability_zones.working.names[1] #return name of 2nd AZ in current region
-}
+# resource "aws_availability_zones" "default_az1" {
+#   availability_zone = data.aws_availability_zones.avialable.names[0] #return name of 1st AZ in current region
+# }
+
+# resource "aws_availability_zones" "default_az2" {
+#   availability_zone = data.aws_availability_zones.avialable.names[1] #return name of 2nd AZ in current region
+# }
 
 
 resource "aws_subnet" "public_1" {
   vpc_id = aws_vpc.VPC_1.id
+  availability_zone = data.aws_availability_zones.available.names[0]
   cidr_block = "10.10.10.0/27"
   map_public_ip_on_launch = true
   tags = { Name = "public_1" }
@@ -63,6 +68,7 @@ resource "aws_subnet" "public_1" {
 
 resource "aws_subnet" "public_2" {
   vpc_id = aws_vpc.VPC_1.id
+  availability_zone = data.aws_availability_zones.available.names[1]
   cidr_block = "10.10.10.32/27"
   map_public_ip_on_launch = true
   tags = { Name = "public_2" }
@@ -154,6 +160,7 @@ resource "aws_launch_template" "web" {
   name                   = "WebServer-Highly-Available-LT"
   image_id               = data.aws_ami.latest_amazon_linux.id
   instance_type          = var.env == "prod" ? "t2.large" : "t2.micro" #defines instance type based on condition 
+  key_name               = "servers"
   vpc_security_group_ids = [aws_security_group.web.id]
   user_data              = filebase64("web-server.sh")
   
@@ -174,7 +181,7 @@ resource "aws_autoscaling_group" "web" {
   health_check_type   = "ELB"
   vpc_zone_identifier = [aws_subnet.public_1.id, aws_subnet.public_2.id]
   target_group_arns = [aws_lb_target_group.web.arn]
-  depends_on = [aws_internet_gateway.igw, aws_nat_gateway.nat_gateway_in_subnet_1, aws_nat_gateway.nat_gateway_in_subnet_2]
+  depends_on = [aws_internet_gateway.igw, aws_nat_gateway.nat_gateway_in_subnet_1, aws_nat_gateway.nat_gateway_in_subnet_2, aws_db_instance.my_db]
   
   launch_template {
     id = aws_launch_template.web.id
@@ -243,3 +250,68 @@ resource "aws_iam_user" "iam_users" {      #creates IAM users from a variable li
     count = length(var.iam_users)
     name = element(var.iam_users, count.index)
 }
+
+######################database###########################
+
+resource "aws_db_instance" "my_db" {
+  allocated_storage    = 10
+  db_name              = "mydb"
+  engine               = "mysql"
+  engine_version       = "5.7"
+  instance_class       = "db.t3.micro"
+  username             = "appl"
+  password             = "databasepass"
+  parameter_group_name = "default.mysql5.7"
+  skip_final_snapshot  = true
+  db_subnet_group_name = aws_db_subnet_group.db_subnet_group.name
+  vpc_security_group_ids = [aws_security_group.db_sec_group.id]
+  multi_az = "true" #if converting from single-az mode the apply_immediately = "true" must specified. Alternatively, you can choose to apply the update during the next maintenance window 
+  #apply_immediately = "true"
+  storage_encrypted = "true"
+}
+
+resource "aws_subnet" "db_subnet_1" {
+  vpc_id = aws_vpc.VPC_1.id
+  cidr_block = "10.10.10.64/27"
+  availability_zone = data.aws_availability_zones.available.names[0]
+  tags = { Name = "db-subnet-1" } 
+}
+
+resource "aws_subnet" "db_subnet_2" {
+  vpc_id = aws_vpc.VPC_1.id
+  cidr_block = "10.10.10.96/27"
+  availability_zone = data.aws_availability_zones.available.names[1]
+  tags = { Name = "db-subnet-2" }
+}
+
+resource "aws_db_subnet_group" "db_subnet_group" {
+  name       = "db-subnet-group"
+  subnet_ids = [aws_subnet.db_subnet_1.id, aws_subnet.db_subnet_2.id]
+  tags = {
+    Name = "My DB subnet group"
+  }
+}
+
+resource "aws_security_group" "db_sec_group" {    #defines SG for database subnets
+  name   = "Database Security Group"
+  vpc_id = aws_vpc.VPC_1.id
+  ingress {
+      from_port   = 3306
+      to_port     = 3306
+      protocol    = "tcp"
+      cidr_blocks = ["10.0.0.0/8"]
+    }
+  
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  
+  tags = {
+    Name = "Database Security Group"  #extra tag 
+  }
+}
+
+

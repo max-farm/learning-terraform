@@ -14,5 +14,7 @@
  
 - outputs.tf provide variables definitions output including load balancer URL.
 
-- remote-state folder contains TF file to create S3 bucket for storing tfstate file
-- main.tf contains link to store tfstate file in S3 bucket
+- remote-state folder contains TF file to create S3 bucket for storing tfstate file.
+- main.tf contains link to store tfstate file in S3 bucket.
+
+- MySQL DB 5.7 in multi-az instance deployment. 

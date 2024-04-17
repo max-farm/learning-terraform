@@ -22,3 +22,15 @@ output "monitoring" {
 output "region" {
   value = var.region
 }
+
+output "db-endpoint" {
+  value = aws_db_instance.my_db.endpoint
+}
+
+output "name-az-1" {
+  value = data.aws_availability_zones.available.names[0]
+}
+
+output "name-az-2" {
+  value = data.aws_availability_zones.available.names[1] 
+}

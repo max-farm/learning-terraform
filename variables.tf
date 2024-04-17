@@ -11,7 +11,7 @@ variable "instance_type" { #instance type based on environment
 variable "allow_ports" {  #list of ports based on evironment
     description = "list of ports to open in SG"
     type = list
-    default = ["80", "443"]
+    default = ["80", "443", "22"]
   
 }
 
